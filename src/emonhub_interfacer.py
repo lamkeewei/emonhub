@@ -6,6 +6,11 @@
   http://openenergymonitor.org
 
 """
+import sys
+
+sys.path.insert(0, "/Users/lamkeewei/Projects/YunBridge/bridge")
+
+from bridgeclient import BridgeClient
 
 import serial
 import time
@@ -686,6 +691,51 @@ class EmonHubSocketInterfacer(EmonHubInterfacer):
                 return self._process_frame(f, t)
             else:
                 return self._process_frame(f)
+
+class EmonHubYunInterfacer(EmonHubInterfacer):
+
+    def __init__(self, name):
+        """Initialize interfacer
+
+        Initialize YunBridge bridgeclient
+
+        """
+        
+        # Initialization
+        super(EmonHubYunInterfacer, self).__init__(name)
+
+        # Initialize bridge
+        self._bridgeclient = BridgeClient()
+
+        # Intialize reading
+        self._bridgeclient.put('reading', '')
+
+    def close(self):
+        pass
+
+    def read(self):
+        """Read data from Bridge Mailbox and process data.
+
+        Return data as a list: [NodeID, val1, val2]
+        
+        """
+
+        # Read latest message and delete it from Mailbox
+        f = self._bridgeclient.get('reading')
+        
+        # Discard empty frames
+        if not f:
+            self._log.warning("No data read")
+            return
+
+        # Reset reading
+        self._bridgeclient.put('reading', '')
+
+        # unix timestamp
+        t = round(time.time(), 2)
+
+        # Process data frame
+        return self._process_frame(f, t)
 
 """class EmonHubInterfacerInitError
 
